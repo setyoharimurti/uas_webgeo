@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>3D Kota Surakarta</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link href="img/favicon.ico" rel="icon">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="lib/animate/animate.min.css" rel="stylesheet">
+    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="css/style.css" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+
+    
+    <style>
+    /* Pastikan elemen html dan body memenuhi layar */
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+    #map {
+        position: fixed;
+        top: 0px; /* Sesuaikan dengan tinggi navbar */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 0; /* Lebih rendah dari navbar */
+    }
+    .custom-ruler-control {
+            position: absolute;
+            bottom: 250px; /* Set posisi vertikal */
+            left: 10px; /* Set posisi horizontal */
+            z-index: 10; /* Agar berada di atas peta */
+    }
+    #track-button {
+            position: absolute;
+            bottom: 40px; /* Posisikan tombol di kiri bawah */
+            left: 10px;
+            z-index: 10;
+            padding: 10px 15px;
+            background-color: #08bccc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #track-button.active {
+            background-color: #dc3545;
+        }
+    #clock {
+            position: absolute;
+            bottom: 90px; /* Letakkan di bawah */
+            left: 10px;   /* Letakkan di kiri */
+            z-index: 10;
+            background-color: rgba(0, 0, 0, 0.6); /* Transparansi hitam */
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+    .mapboxgl-ctrl-geocoder input[type="text"] {
+            text-indent: 20px !important; /* Sesuaikan padding untuk teks di dalamnya */
+        }
+
+    .geojson-layer :hover {
+            opacity: 2; /* Efek hover */
+        }
+    
+    
+    #menu {
+            position: absolute;
+            bottom: 10px; /* Pastikan tidak tumpang tindih dengan geocoder */
+            left: 800px;
+            background: #efefef;
+            padding: 10px;
+            z-index: 500; /* Z-index lebih rendah dari geocoder */
+            font-family: 'Open Sans', sans-serif;
+        }
+    
+    
+    </style>
+    <link rel="stylesheet" href="node_modules/@mapbox-controls/ruler/src/index.css">
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.min.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.css" type="text/css">
+    <script src='https://github.com/lukasmartinelli/mapbox-gl-inspect/releases/download/v1.3.1/mapbox-gl-inspect.js'></script>
+    <link href='https://github.com/lukasmartinelli/mapbox-gl-inspect/releases/download/v1.3.1/mapbox-gl-inspect.css' rel='stylesheet' />
+    
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.3.1/mapbox-gl-directions.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.3.1/mapbox-gl-directions.css" type="text/css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@mapbox/mapbox-gl-traffic/mapbox-gl-traffic.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@mapbox/mapbox-gl-traffic/mapbox-gl-traffic.css" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+
+</head>
+
+<body>
+    <!-- Spinner Start -->
+    <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+    <!-- Spinner End -->
+
+
+    <!-- Navbar Start -->
+        <a href="index.html" class="navbar-brand d-flex align-items-center px-0 px-lg-0">
+            <h2 class="m-0 text-primary"><i class="fa fa-map me-3"></i>3D Kota Surakarta</h2>
+        </a>
+        <button type="button" class="navbar-toggler me-4" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+            <div class="navbar-nav ms-auto p-4 p-lg-0">
+                <a href="index.html" class="nav-item nav-link">Beranda</a>
+             
+                
+            </div>
+            <a href="courses.html" class="btn btn-primary py-4 px-lg-5 d-none d-lg-block">Jelajahi<i class="fa fa-arrow-right ms-3"></i></a>
+        </div>
+    </nav>
+    <style>
+      
+    
+        p {
+            font-family: 'Nunito', sans-serif;
+            margin: 0;
+            font-size: 13px;
+        }
+    </style>
+    
+    </style>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
+    <script src="https://unpkg.com/three@0.126.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
+    
+    <!-- Navbar End -->
+    <div id="map"></div>
+    <div id="menu">
+        <input id="satellite-streets-v12" type="radio" name="rtoggle" value="satellite" checked="checked">
+        <!-- See a list of Mapbox-hosted public styles at -->
+        <!-- https://docs.mapbox.com/api/maps/styles/#mapbox-styles -->
+        
+        
+    </div>
+    <div id="rulerControlContainer" class="custom-ruler-control"></div>
+    
+    
+    </div>
+
+
+    <div id="clock"></div> 
+    
+    <div class="calculation-box">
+        <p>Area & Perimeter</p>
+        <div id="calculated-area"></div>
+    </div>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoicmFmZmlzYXR5YW4iLCJhIjoiY2xhcTg5b3czMWc2bzQxbzJkb3g5ZTIzbSJ9._XfNtiapF6wZ03D0sGo_YQ';
+        
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/satellite-streets-v12',
+            center: [110.80639,-7.55556], // Initial map center
+            projection: 'globe',
+            zoom: 17,
+            pitch: 60,
+            bearing: 0
+        });
+
+        
+
+        map.on('style.load', () => {
+        map.setFog({
+            color: 'rgb(186, 210, 235)', // Lower atmosphere
+            'high-color': 'rgb(36, 92, 223)', // Upper atmosphere
+            'horizon-blend': 0.02, // Atmosphere thickness (default 0.2 at low zooms)
+            'space-color': 'rgb(11, 11, 25)', // Background color
+            'star-intensity': 0.6 // Background star brightness (default 0.35 at low zoooms )
+        });
+        });
+        
+        const nav = new mapboxgl.NavigationControl({ showCompass: true });
+        map.addControl(nav, 'bottom-right');
+
+       
+        function changeView(zoom, pitch, bearing) {
+            map.flyTo({
+                zoom: zoom,
+                pitch: pitch,
+                bearing: bearing,
+                duration: 2000 // Durasi animasi dalam milidetik
+            });
+        }
+
+        map.addControl(
+            new MapboxGeocoder({
+                accessToken: mapboxgl.accessToken,
+                mapboxgl: mapboxgl
+            }),
+            'top-left'
+        );
+
+
+
+        
+        
+        const layerList = document.getElementById('menu');
+        const inputs = layerList.getElementsByTagName('input');
+    
+        for (const input of inputs) {
+            input.onclick = (layer) => {
+                const layerId = layer.target.id;
+                map.setStyle('mapbox://styles/mapbox/' + layerId);
+            };
+        }
+        
+        
+        const modelOrigin = [110.374298,    -7.786487];
+        const modelAltitude = 0;
+        const modelRotate = [Math.PI / 2, -0.025, 0];
+
+        const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(
+            modelOrigin,
+            modelAltitude
+        );
+
+        // transformation parameters to position, rotate and scale the 3D model onto the map
+        const modelTransform = {
+            translateX: modelAsMercatorCoordinate.x,
+            translateY: modelAsMercatorCoordinate.y,
+            translateZ: modelAsMercatorCoordinate.z,
+            rotateX: modelRotate[0],
+            rotateY: modelRotate[1],
+            rotateZ: modelRotate[2],
+            /* Since the 3D model is in real world meters, a scale transform needs to be
+            * applied since the CustomLayerInterface expects units in MercatorCoordinates.
+            */
+            scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
+        };
+
+        const THREE = window.THREE;
+
+        
+
+
+        // configuration of the custom layer for a 3D model per the CustomLayerInterface
+        const customLayer = {
+            id: '3d-model',
+            type: 'custom',
+            renderingMode: '3d',
+            onAdd: function (map, gl) {
+                this.camera = new THREE.Camera();
+                this.scene = new THREE.Scene();
+
+                // create two three.js lights to illuminate the model
+                const directionalLight = new THREE.DirectionalLight(0xffffff);
+                directionalLight.position.set(0, -60, 60).normalize();
+                this.scene.add(directionalLight);
+
+                const directionalLight2 = new THREE.DirectionalLight(0xffffff);
+                directionalLight2.position.set(0, 70, 60).normalize();
+                this.scene.add(directionalLight2);
+
+                // use the three.js GLTF loader to add the 3D model to the three.js scene
+                const loader = new THREE.GLTFLoader();
+                //loader.load(
+                    //'/img/lod2.glb',
+                    //(gltf) => {
+                        //this.scene.add(gltf.scene);
+                        //opacity:10
+                    //}
+                //);
+                this.map = map;
+
+                // use the Mapbox GL JS map canvas for three.js
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: map.getCanvas(),
+                    context: gl,
+                    antialias: true
+                });
+
+                this.renderer.autoClear = false;
+            },
+            render: function (gl, matrix) {
+                const rotationX = new THREE.Matrix4().makeRotationAxis(
+                    new THREE.Vector3(1, 0, 0),
+                    modelTransform.rotateX
+                );
+                const rotationY = new THREE.Matrix4().makeRotationAxis(
+                    new THREE.Vector3(0, 1, 0),
+                    modelTransform.rotateY
+                );
+                const rotationZ = new THREE.Matrix4().makeRotationAxis(
+                    new THREE.Vector3(0, 0, 1),
+                    modelTransform.rotateZ
+                );
+
+                const m = new THREE.Matrix4().fromArray(matrix);
+                const l = new THREE.Matrix4()
+                    .makeTranslation(
+                        modelTransform.translateX,
+                        modelTransform.translateY,
+                        modelTransform.translateZ
+                    )
+                    .scale(
+                        new THREE.Vector3(
+                            modelTransform.scale,
+                            -modelTransform.scale,
+                            modelTransform.scale
+                        )
+                    )
+                    .multiply(rotationX)
+                    .multiply(rotationY)
+                    .multiply(rotationZ);
+
+                this.camera.projectionMatrix = m.multiply(l);
+                this.renderer.resetState();
+                this.renderer.render(this.scene, this.camera);
+                this.map.triggerRepaint();
+            }
+        };
+
+        map.on('style.load', () => {
+            // Insert the layer beneath any symbol layer.
+            const layers = map.getStyle().layers;
+            const labelLayerId = layers.find(
+                (layer) => layer.type === 'symbol' && layer.layout['text-field']
+            ).id;
+
+            // The 'building' layer in the Mapbox Streets
+            // vector tileset contains building height data
+            // from OpenStreetMap.
+            map.addLayer(
+                {
+                    'id': 'add-3d-buildings',
+                    'source': 'composite',
+                    'source-layer': 'building',
+                    'filter': ['==', 'extrude', 'true'],
+                    'type': 'fill-extrusion',
+                    'minzoom': 15,
+                    'paint': {
+                        'fill-extrusion-color': '#a52a2a',
+
+                        // Use an 'interpolate' expression to
+                        // add a smooth transition effect to
+                        // the buildings as the user zooms in.
+                        'fill-extrusion-height': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            15,
+                            0,
+                            15.05,
+                            ['get', 'height']
+                        ],
+                        'fill-extrusion-base': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            15,
+                            0,
+                            15.05,
+                            ['get', 'min_height']
+                        ],
+                        'fill-extrusion-opacity': 0.6
+                    }
+                },
+                labelLayerId
+            );
+        });
+
+        map.on('style.load', () => {
+            map.addLayer(customLayer, 'waterway-label');
+        });
+
+
+        map.on('style.load', () => {
+            // Memuat file GeoJSON dari URL
+            fetch('http://localhost:8080/geoserver/cite/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=cite%3ABidangTanahGabungan&outputFormat=application%2Fjson')
+                .then(response => response.json())
+                .then(geojson => {
+            // Menambahkan sumber GeoJSON ke peta
+            map.addSource('geojson-data', {
+                type: 'geojson',
+                data: geojson
+            });
+
+            // Menambahkan layer untuk bidang tanah (fill)
+            map.addLayer({
+                id: 'geojson-layer',
+                type: 'fill', // Layer type is 'fill' for polygons
+                source: 'geojson-data',
+                paint: {
+                    'fill-color': '#FFFFE0', // Default fill color (light yellow)
+                    'fill-opacity': 0.2,
+                }
+            });
+
+            // Menambahkan layer untuk batas bidang tanah (line)
+            map.addLayer({
+                id: 'geojson-boundary',
+                type: 'line', // Layer type is 'line' for boundaries
+                source: 'geojson-data',
+                paint: {
+                    'line-color': '#06BBCC', // Default boundary color (turquoise)
+                    'line-width': 1,
+                    'line-opacity': 0.5,
+                }
+            });
+
+            // Menambahkan interaksi klik pada layer
+            map.on('click', 'geojson-layer', (e) => {
+                const properties = e.features[0].properties; // Mengambil atribut bidang tanah
+                const coordinates = e.lngLat; // Mengambil lokasi klik
+
+                // Membuat tabel untuk menampilkan properti
+                let tableContent = '<table style="width:100%; border-collapse:collapse;">';
+                for (const [key, value] of Object.entries(properties)) {
+                    tableContent += `
+                        <tr>
+                            <td style="border:1px solid #ddd; padding:8px;"><strong>${key}</strong></td>
+                            <td style="border:1px solid #ddd; padding:8px;">${value}</td>
+                        </tr>
+                    `;
+                }
+                tableContent += '</table>';
+
+                // Menampilkan popup
+                new mapboxgl.Popup()
+                    .setLngLat(coordinates)
+                    .setHTML(`
+                        <div style="font-family:Arial, sans-serif; font-size:10px;">
+                            <strong>Metadata Bidang Tanah</strong><br>
+                            ${tableContent}
+                        </div>
+                    `)
+                    .addTo(map);
+            });
+
+            // Menambahkan interaksi hover (ubah warna bidang dan batas tanah)
+            map.on('mouseenter', 'geojson-layer', (e) => {
+                map.getCanvas().style.cursor = 'pointer';
+
+                // Ambil OBJECTID fitur yang dihover
+                const featureId = e.features[0].properties.OBJECTID;
+
+                // Highlight fitur dengan mengubah warna bidang dan garis batasnya
+                map.setPaintProperty('geojson-layer', 'fill-color', [
+                    'case',
+                    ['==', ['get', 'OBJECTID'], featureId], '#8B0000', // Highlight color for fill (dark gray)
+                    '#FFFFE0' // Default fill color (light yellow)
+                ]);
+                map.setPaintProperty('geojson-boundary', 'line-color', [
+                    'case',
+                    ['==', ['get', 'OBJECTID'], featureId], '#8B0000', // Highlight color for boundary (dark red)
+                    '#06BBCC' // Default boundary color (turquoise)
+                ]);
+            });
+
+            map.on('mouseleave', 'geojson-layer', () => {
+                map.getCanvas().style.cursor = '';
+
+                // Kembalikan warna ke default
+                map.setPaintProperty('geojson-layer', 'fill-color', '#FFFFE0'); // Default fill color (light yellow)
+                map.setPaintProperty('geojson-boundary', 'line-color', '#06BBCC'); // Default boundary color (turquoise)
+            });
+        })
+        .catch(err => console.error('Gagal memuat GeoJSON:', err));
+        });
+
+
+        
+        
+        map.on('style.load', () => {
+        //map.addSource('mapbox-dem', {
+        //    'type': 'raster-dem',
+        //    'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+        //    'tileSize': 512,
+        //    'maxzoom': 14
+        //});
+        // add the DEM source as a terrain layer with exaggerated height
+        // map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.5 });
+       
+        Papa.parse('img/cctvbaru.csv', {
+            download: true,
+            header: true,
+            complete: function (results) {
+                console.log("Data CCTV dari CSV berhasil dimuat:", results.data); // Debugging output
+                addCCTVMarkers(results.data);
+            },
+            error: function (err) {
+                console.error("Gagal memuat CSV:", err);
+            }
+        });
+
+        function addCCTVMarkers(data) {
+            if (!data || data.length === 0) {
+                console.error("Data CCTV kosong atau tidak valid.");
+                return;
+            }
+
+            data.forEach((cctv, index) => {
+                if (!cctv.long || !cctv.lat || !cctv.link) {
+                    console.warn("Data CCTV tidak lengkap:", cctv);
+                    return;
+                }
+
+                console.log("Menambahkan marker untuk CCTV:", cctv);
+
+                // Buat elemen custom marker
+                const el = document.createElement('div');
+                el.className = 'custom-marker';
+                el.style.backgroundImage = 'url(img/cctv.png)';
+                el.style.width = '30px';
+                el.style.height = '30px';
+                el.style.backgroundSize = '100%';
+
+                // Buat ID unik untuk video pada popup
+                const videoId = `video-popup-${index}`;
+
+                // Buat popup
+                const popup = new mapboxgl.Popup().setHTML(`
+                <div style="width: 200px; height: 180px; padding: 5px;">
+                    <div style="text-align: center; font-weight: bold; margin-bottom: 10px;"> ${cctv.Name}
+                    </div>
+                    <video id="${videoId}" style="width: 100%; height: 150px;" controls></video>
+                </div>
+                `);
+
+                // Tambahkan marker ke peta
+                new mapboxgl.Marker(el)
+                    .setLngLat([parseFloat(cctv.long), parseFloat(cctv.lat)]) // Konversi koordinat ke float
+                    .setPopup(popup)
+                    .addTo(map);
+
+                // Event untuk memutar video saat popup dibuka
+                popup.on('open', () => {
+                    const video = document.getElementById(videoId);
+                    if (!video) {
+                        console.error('Video element tidak ditemukan:', videoId);
+                        return;
+                    }
+
+                    // Menggunakan HLS.js jika didukung
+                    if (Hls.isSupported()) {
+                        console.log('HLS.js didukung untuk video:', cctv.link);
+
+                        const hls = new Hls();
+                        hls.loadSource(cctv.link); // URL stream HLS
+                        hls.attachMedia(video);
+
+                        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                            console.log('HLS manifest parsed untuk video:', cctv.link);
+                            video.play();
+                        });
+
+                        hls.on(Hls.Events.ERROR, (event, data) => {
+                            console.error('Error HLS.js untuk video:', cctv.link, data);
+                        });
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        console.log('Browser mendukung HLS natively untuk video:', cctv.link);
+
+                        video.src = cctv.link; // URL stream HLS
+                        video.addEventListener('loadedmetadata', () => {
+                            video.play();
+                        });
+                    } else {
+                        console.error('Browser tidak mendukung HLS untuk video:', cctv.link);
+                    }
+                });
+            });
+        }
+
+        const rainLayer = new RainLayer({
+            id: 'rain',
+            source: 'rainviewer',
+            scale: 'noaa'
+        });
+        map.addLayer(rainLayer);
+
+        // You can get the HTML text for the legend
+        const legendHTML = rainLayer.getLegendHTML();
+
+        // You can receive radar data refresh events
+        // data.timestamp - Unix timestamp in seconds (UTC) when the data was generated
+        rainLayer.on('refresh', data => {
+            console.log(data.timestamp);
+        });
+
+        
+        const trackButton = document.getElementById('track-button');
+            let watchId = null; // Variabel untuk menyimpan ID pelacakan lokasi
+            let userMarker = null; // Variabel untuk menyimpan marker pengguna
+
+            // Fungsi untuk memperbarui center peta dan menambahkan marker berdasarkan koordinat terbaru
+            function updateMapCenter(position) {
+                const lng = position.coords.longitude;
+                const lat = position.coords.latitude;
+
+                // Pusatkan peta di lokasi pengguna
+                map.flyTo({
+                    center: [lng, lat],
+                    essential: true,
+                    zoom: 15
+                });
+
+                // Tambahkan atau perbarui marker lokasi pengguna
+                if (userMarker) {
+                    // Jika marker sudah ada, perbarui posisinya
+                    userMarker.setLngLat([lng, lat]);
+                } else {
+                    // Jika marker belum ada, buat marker baru
+                    userMarker = new mapboxgl.Marker({
+                        color: '#ff0000', // Warna cerah (merah terang)
+                        draggable: false, // Marker tidak bisa digeser
+                    })
+                        .setLngLat([lng, lat]) // Set lokasi marker
+                        .addTo(map); // Tambahkan ke peta
+                }
+            }
+
+            // Fungsi untuk memulai atau menghentikan pelacakan lokasi
+            function toggleTracking() {
+                if (watchId === null) {
+                    // Mulai pelacakan
+                    if ("geolocation" in navigator) {
+                        watchId = navigator.geolocation.watchPosition(updateMapCenter, (error) => {
+                            console.error('Error accessing geolocation: ', error);
+                        }, {
+                            enableHighAccuracy: true,
+                            maximumAge: 1000,
+                            timeout: 10000
+                        });
+
+                        trackButton.innerText = 'Stop';
+                        trackButton.classList.add('active');
+                    } else {
+                        alert("Geolocation tidak didukung di browser ini.");
+                    }
+                } else {
+                    // Hentikan pelacakan
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                    trackButton.innerText = 'Geolocation';
+                    trackButton.classList.remove('active');
+
+                    // Hapus marker lokasi pengguna
+                    if (userMarker) {
+                        userMarker.remove(); // Hapus marker dari peta
+                        userMarker = null; // Set marker kembali ke null
+                    }
+                }
+            }
+
+            // Event listener untuk tombol pelacakan
+            trackButton.addEventListener('click', toggleTracking);
+
+
+        
+        function updateClock() {
+            const now = new Date();
+            const day = now.toLocaleDateString('en-US', { weekday: 'short' });
+            const date = now.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            document.getElementById('clock').innerHTML = `${day}, ${date}<br>${time}`;
+        }
+
+        // Memperbarui waktu setiap detik
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        
+
+        map.on('load', function() {
+            const script = document.createElement('script');
+            script.src = 'node_modules/@mapbox-controls/ruler';
+            script.onload = function() {
+                // Inisialisasi RulerControl dan tambahkan ke elemen khusus
+                const rulerControl = new RulerControl();
+                map.addControl(rulerControl); // Pastikan kontrol diaktifkan pada peta
+
+                // Pindahkan elemen kontrol ke dalam kontainer khusus
+                const controlElement = document.querySelector('.mapboxgl-ctrl-ruler');
+                const rulerContainer = document.getElementById('rulerControlContainer');
+                rulerContainer.appendChild(controlElement);
+            };
+            document.body.appendChild(script);
+        });
+
+        
+       
+        
+    });
+    
+    </script>
+
+
+    
+        
+
+    
+
+
+    <!-- Back to Top -->
+
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="lib/wow/wow.min.js"></script>
+    <script src="lib/easing/easing.min.js"></script>
+    <script src="lib/waypoints/waypoints.min.js"></script>
+    <script src="lib/owlcarousel/owl.carousel.min.js"></script>
+
+    <!-- Template Javascript -->
+    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbar = document.querySelector('.navbar');
+            const map = document.getElementById('map');
+
+            const adjustMapPosition = () => {
+                const navbarHeight = navbar ? navbar.offsetHeight : 0;
+                map.style.top = `${navbarHeight}px`;
+            };
+
+            window.addEventListener('resize', adjustMapPosition);
+            adjustMapPosition();
+        });
+    </script>
+</body>
+
+</html>
